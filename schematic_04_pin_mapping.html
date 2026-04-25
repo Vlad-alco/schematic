@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Таблица распиновки ESP32-S3 — BuhloWar v2.0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --card-bg: #111827;
+    --card-border: #1e293b;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --accent: #3b82f6;
+    --header-bg: #1e293b;
+
+    /* Section accent colors */
+    --clr-buttons: #f59e0b;
+    --clr-sensors: #22c55e;
+    --clr-buses: #14b8a6;
+    --clr-heater: #ef4444;
+    --clr-valves: #f97316;
+    --clr-12v: #3b82f6;
+    --clr-buzzer: #a855f7;
+    --clr-spare: #6b7280;
+
+    /* Row background colors */
+    --row-220v: rgba(239, 68, 68, 0.08);
+    --row-12v: rgba(249, 115, 22, 0.08);
+    --row-sensor: rgba(34, 197, 94, 0.08);
+    --row-i2c: rgba(20, 184, 166, 0.08);
+    --row-spi: rgba(168, 85, 247, 0.08);
+    --row-spare: rgba(107, 114, 128, 0.08);
+    --row-gpio-in: rgba(245, 158, 11, 0.06);
+    --row-buzzer: rgba(168, 85, 247, 0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-width: 1200px;
+  }
+
+  .page-wrapper {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 32px 40px;
+  }
+
+  /* ====== HEADER ====== */
+  .header {
+    text-align: center;
+    margin-bottom: 36px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--card-border);
+    position: relative;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .header .project-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #1e3a5f, #1e293b);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 6px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, #e2e8f0, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header .subtitle {
+    color: var(--text-muted);
+    font-size: 15px;
+  }
+  .header .mcu-info {
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .header .mcu-info span {
+    display: inline-block;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 4px;
+    padding: 2px 10px;
+    margin: 0 4px;
+  }
+
+  /* ====== SECTION HEADERS ====== */
+  .section-group {
+    margin-bottom: 24px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px;
+    border-radius: 8px 8px 0 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .section-header .icon {
+    font-size: 18px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.1);
+  }
+  .section-header .count {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    opacity: 0.7;
+    background: rgba(0,0,0,0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .sh-buttons { background: rgba(245,158,11,0.15); color: var(--clr-buttons); border-left: 4px solid var(--clr-buttons); }
+  .sh-sensors { background: rgba(34,197,94,0.15); color: var(--clr-sensors); border-left: 4px solid var(--clr-sensors); }
+  .sh-buses   { background: rgba(20,184,166,0.15); color: var(--clr-buses);   border-left: 4px solid var(--clr-buses); }
+  .sh-heater  { background: rgba(239,68,68,0.15);  color: var(--clr-heater);  border-left: 4px solid var(--clr-heater); }
+  .sh-valves  { background: rgba(249,115,22,0.15); color: var(--clr-valves);  border-left: 4px solid var(--clr-valves); }
+  .sh-12v     { background: rgba(59,130,246,0.15); color: var(--clr-12v);     border-left: 4px solid var(--clr-12v); }
+  .sh-buzzer  { background: rgba(168,85,247,0.15); color: var(--clr-buzzer);  border-left: 4px solid var(--clr-buzzer); }
+  .sh-spare   { background: rgba(107,114,128,0.15);color: var(--clr-spare);   border-left: 4px solid var(--clr-spare); }
+
+  /* ====== TABLE ====== */
+  .pin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    border: 1px solid var(--card-border);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+  }
+  .pin-table thead th {
+    background: var(--header-bg);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--card-border);
+    position: sticky;
+    top: 0;
+  }
+  .pin-table tbody tr {
+    border-bottom: 1px solid rgba(30,41,59,0.6);
+    transition: background 0.15s;
+  }
+  .pin-table tbody tr:hover {
+    filter: brightness(1.15);
+  }
+  .pin-table td {
+    padding: 10px 14px;
+    vertical-align: middle;
+  }
+
+  /* GPIO number cell */
+  .gpio-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 18px;
+    width: 90px;
+    text-align: center;
+    position: relative;
+  }
+  .gpio-cell .gpio-num {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* Macro name */
+  .macro-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: #c4b5fd;
+    white-space: nowrap;
+  }
+
+  /* Direction */
+  .dir-cell {
+    white-space: nowrap;
+  }
+  .dir-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 4px;
+  }
+  .dir-out {
+    background: rgba(59,130,246,0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59,130,246,0.3);
+  }
+  .dir-in {
+    background: rgba(34,197,94,0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+  .dir-io {
+    background: rgba(245,158,11,0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245,158,11,0.3);
+  }
+  .arrow-out::before { content: '→ '; font-weight: 700; }
+  .arrow-in::before  { content: '← '; font-weight: 700; }
+  .arrow-io::before  { content: '↔ '; font-weight: 700; }
+
+  /* Bus type */
+  .bus-cell {
+    white-space: nowrap;
+  }
+  .bus-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .bus-gpio   { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+  .bus-i2c    { background: rgba(20,184,166,0.15);  color: #2dd4bf; border: 1px solid rgba(20,184,166,0.3); }
+  .bus-spi    { background: rgba(168,85,247,0.15);  color: #c4b5fd; border: 1px solid rgba(168,85,247,0.3); }
+  .bus-1wire  { background: rgba(34,197,94,0.15);   color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+  .bus-ssr    { background: rgba(239,68,68,0.15);   color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+
+  /* Equipment cell */
+  .equip-cell {
+    font-size: 13px;
+  }
+  .equip-cell .equip-main {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .equip-cell .equip-detail {
+    color: var(--text-muted);
+    font-size: 11.5px;
+  }
+
+  /* Notes cell */
+  .notes-cell {
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+  .notes-cell .note-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-right: 4px;
+    font-weight: 600;
+  }
+  .tag-220v { background: rgba(239,68,68,0.2); color: #f87171; }
+  .tag-12v  { background: rgba(249,115,22,0.2); color: #fb923c; }
+  .tag-pu   { background: rgba(34,197,94,0.2);  color: #4ade80; }
+  .tag-rc   { background: rgba(168,85,247,0.2); color: #c4b5fd; }
+
+  /* Row color backgrounds */
+  .row-buttons { background: var(--row-gpio-in); }
+  .row-sensor  { background: var(--row-sensor); }
+  .row-i2c     { background: var(--row-i2c); }
+  .row-spi     { background: var(--row-spi); }
+  .row-220v    { background: var(--row-220v); }
+  .row-12v     { background: var(--row-12v); }
+  .row-buzzer  { background: var(--row-buzzer); }
+  .row-spare   { background: var(--row-spare); }
+
+  /* ====== SUMMARY CARDS ====== */
+  .summary-section {
+    margin-top: 36px;
+    margin-bottom: 32px;
+  }
+  .summary-section h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 18px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text);
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .summary-card .sc-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .summary-card .sc-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+  }
+  .sc-accent-blue   { color: var(--accent); }
+  .sc-accent-green  { color: var(--clr-sensors); }
+  .sc-accent-red    { color: var(--clr-heater); }
+  .sc-accent-purple { color: var(--clr-buzzer); }
+  .sc-accent-teal   { color: var(--clr-buses); }
+  .sc-accent-orange { color: var(--clr-valves); }
+  .sc-accent-amber  { color: var(--clr-buttons); }
+  .sc-accent-gray   { color: var(--clr-spare); }
+
+  /* ====== DETAIL TABLES ====== */
+  .detail-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .detail-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .detail-card-header {
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .detail-card-header .dc-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    background: rgba(255,255,255,0.08);
+  }
+  .dch-i2c { background: rgba(20,184,166,0.12); color: var(--clr-buses); }
+  .dch-ssr { background: rgba(239,68,68,0.12);  color: var(--clr-heater); }
+  .dch-free{ background: rgba(107,114,128,0.12); color: var(--clr-spare); }
+  .dch-volt{ background: rgba(59,130,246,0.12);  color: var(--accent); }
+
+  .detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .detail-table th {
+    background: rgba(0,0,0,0.2);
+    color: var(--text-muted);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 8px 14px;
+    text-align: left;
+  }
+  .detail-table td {
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(30,41,59,0.4);
+  }
+  .detail-table tr:last-child td {
+    border-bottom: none;
+  }
+  .detail-table tr:hover {
+    background: rgba(255,255,255,0.03);
+  }
+
+  .addr-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: #2dd4bf;
+  }
+  .addr-dec {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* SSR detail rows */
+  .ssr-type-tzt {
+    display: inline-block;
+    background: rgba(239,68,68,0.15);
+    color: #f87171;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+  .ssr-type-enmg {
+    display: inline-block;
+    background: rgba(59,130,246,0.15);
+    color: #60a5fa;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  /* Free GPIO chips */
+  .free-gpio-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 14px;
+  }
+  .free-gpio-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: rgba(107,114,128,0.15);
+    color: #9ca3af;
+    border: 1px solid rgba(107,114,128,0.3);
+  }
+
+  /* Voltage domain chips */
+  .volt-domain {
+    padding: 14px;
+  }
+  .vd-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(30,41,59,0.4);
+  }
+  .vd-item:last-child { border-bottom: none; }
+  .vd-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .vd-label {
+    font-weight: 600;
+    font-size: 13px;
+    min-width: 80px;
+  }
+  .vd-desc {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  /* ====== FOOTER ====== */
+  .footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--card-border);
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer .sheet-info {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ====== LEGEND ====== */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 14px 18px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* ====== PRINT STYLES ====== */
+  @media print {
+    body { background: white; color: #1a1a1a; min-width: auto; }
+    .page-wrapper { padding: 10px; }
+    .header h1 { background: none; -webkit-text-fill-color: #1a1a1a; }
+    .header .project-badge { border-color: #333; color: #333; background: #f0f0f0; }
+    .pin-table thead th { background: #e5e7eb; color: #374151; }
+    .section-header { color: #1a1a1a; }
+    .sh-buttons { background: #fef3c7; border-left-color: #d97706; }
+    .sh-sensors { background: #dcfce7; border-left-color: #16a34a; }
+    .sh-buses   { background: #ccfbf1; border-left-color: #0d9488; }
+    .sh-heater  { background: #fee2e2; border-left-color: #dc2626; }
+    .sh-valves  { background: #ffedd5; border-left-color: #ea580c; }
+    .sh-12v     { background: #dbeafe; border-left-color: #2563eb; }
+    .sh-buzzer  { background: #f3e8ff; border-left-color: #9333ea; }
+    .sh-spare   { background: #f3f4f6; border-left-color: #6b7280; }
+
+    .row-buttons { background: #fffbeb; }
+    .row-sensor  { background: #f0fdf4; }
+    .row-i2c     { background: #f0fdfa; }
+    .row-spi     { background: #faf5ff; }
+    .row-220v    { background: #fef2f2; }
+    .row-12v     { background: #fff7ed; }
+    .row-buzzer  { background: #faf5ff; }
+    .row-spare   { background: #f9fafb; }
+
+    .summary-card { background: #f9fafb; border-color: #d1d5db; }
+    .detail-card { background: #f9fafb; border-color: #d1d5db; }
+    .legend { background: #f9fafb; border-color: #d1d5db; }
+
+    .gpio-cell .gpio-num { background: #f3f4f6; border-color: #d1d5db; }
+    .macro-cell { color: #6d28d9; }
+    .dir-out { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+    .dir-in  { background: #dcfce7; color: #15803d; border-color: #86efac; }
+    .dir-io  { background: #fef3c7; color: #b45309; border-color: #fcd34d; }
+    .bus-gpio  { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .bus-i2c   { background: #ccfbf1; color: #0f766e; border-color: #5eead4; }
+    .bus-spi   { background: #f3e8ff; color: #7e22ce; border-color: #d8b4fe; }
+    .bus-1wire { background: #dcfce7; color: #166534; border-color: #86efac; }
+    .bus-ssr   { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+
+    .tag-220v { background: #fee2e2; color: #b91c1c; }
+    .tag-12v  { background: #ffedd5; color: #c2410c; }
+    .tag-pu   { background: #dcfce7; color: #166534; }
+    .tag-rc   { background: #f3e8ff; color: #7e22ce; }
+
+    .addr-mono { color: #0f766e; }
+    .ssr-type-tzt { background: #fee2e2; color: #b91c1c; }
+    .ssr-type-enmg { background: #dbeafe; color: #1d4ed8; }
+    .free-gpio-chip { background: #f3f4f6; color: #6b7280; border-color: #d1d5db; }
+    .detail-table th { background: #e5e7eb; color: #374151; }
+    .notes-cell { color: #6b7280; }
+    .equip-cell .equip-detail { color: #6b7280; }
+    .footer { border-top-color: #d1d5db; color: #9ca3af; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- ====== HEADER ====== -->
+  <div class="header">
+    <div class="project-badge">BuhloWar v2.0 — Схема 4</div>
+    <h1>Таблица распиновки ESP32-S3</h1>
+    <div class="subtitle">Полный справочник назначений выводов GPIO для сборки и отладки</div>
+    <div class="mcu-info">
+      <span>ESP32-S3-DevKitC-1</span>
+      <span>ESP32-S3-WROOM-1</span>
+      <span>45 GPIO / 21 задействовано</span>
+    </div>
+  </div>
+
+  <!-- ====== LEGEND ====== -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(239,68,68,0.3)"></div> 220В AC выходы</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(249,115,22,0.3)"></div> 12В DC выходы</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(34,197,94,0.3)"></div> Датчики / 1-Wire</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(20,184,166,0.3)"></div> Шина I²C</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(168,85,247,0.3)"></div> Шина SPI</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(245,158,11,0.3)"></div> Входы (кнопки)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(107,114,128,0.3)"></div> Запасные</div>
+  </div>
+
+  <!-- ====== SECTION: BUTTONS ====== -->
+  <div class="section-group">
+    <div class="section-header sh-buttons">
+      <div class="icon">⏷</div>
+      Входы (кнопки)
+      <div class="count">4 вывода</div>
+    </div>
+    <table class="pin-table">
+      <thead>
+        <tr>
+          <th style="width:90px">GPIO</th>
+          <th style="width:200px">Макро (config.h)</th>
+          <th style="width:120px">Направление</th>
+          <th style="width:90px">Тип шины</th>
+          <th>Оборудование</th>
+          <th style="width:220px">Примечание</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-buttons">
+          <td class="gpio-cell"><span class="gpio-num">4</span></td>
+          <td class="macro-cell">BUTTON_DOWN_PIN</td>
+          <td class="dir-cell"><span class="dir-badge dir-in arrow-in">Input</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-gpio">GPIO</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">Кнопка DOWN</div>
+            <div class="equip-detail">APWIKOGER тактовая кнопка</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-pu">PU</span>Pull-up 10кОм → +3.3В</td>
+        </tr>
+        <tr class="row-buttons">
+          <td class="gpio-cell"><span class="gpio-num">5</span></td>
+          <td class="macro-cell">BUTTON_UP_PIN</td>
+          <td class="dir-cell"><span class="dir-badge dir-in arrow-in">Input</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-gpio">GPIO</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">Кнопка UP</div>
+            <div class="equip-detail">APWIKOGER тактовая кнопка</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-pu">PU</span>Pull-up 10кОм → +3.3В</td>
+        </tr>
+        <tr class="row-buttons">
+          <td class="gpio-cell"><span class="gpio-num">6</span></td>
+          <td class="macro-cell">BUTTON_SET_PIN</td>
+          <td class="dir-cell"><span class="dir-badge dir-in arrow-in">Input</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-gpio">GPIO</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">Кнопка SET</div>
+            <div class="equip-detail">APWIKOGER тактовая кнопка</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-pu">PU</span>Pull-up 10кОм → +3.3В</td>
+        </tr>
+        <tr class="row-buttons">
+          <td class="gpio-cell"><span class="gpio-num">7</span></td>
+          <td class="macro-cell">BUTTON_BACK_PIN</td>
+          <td class="dir-cell"><span class="dir-badge dir-in arrow-in">Input</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-gpio">GPIO</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">Кнопка BACK</div>
+            <div class="equip-detail">APWIKOGER тактовая кнопка</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-pu">PU</span>Pull-up 10кОм → +3.3В</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ====== SECTION: SENSORS ====== -->
+  <div class="section-group">
+    <div class="section-header sh-sensors">
+      <div class="icon">🌡</div>
+      Датчики (1-Wire)
+      <div class="count">1 вывод</div>
+    </div>
+    <table class="pin-table">
+      <thead>
+        <tr>
+          <th style="width:90px">GPIO</th>
+          <th style="width:200px">Макро (config.h)</th>
+          <th style="width:120px">Направление</th>
+          <th style="width:90px">Тип шины</th>
+          <th>Оборудование</th>
+          <th style="width:220px">Примечание</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-sensor">
+          <td class="gpio-cell"><span class="gpio-num">3</span></td>
+          <td class="macro-cell">ONE_WIRE_BUS</td>
+          <td class="dir-cell"><span class="dir-badge dir-io arrow-io">I/O</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-1wire">1-Wire</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">4× DS18B20</div>
+            <div class="equip-detail">Датчики температуры (куб, царга, дефлегматор, выход)</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-pu">PU</span>Pull-up 4.7кОм → +3.3В</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ====== SECTION: I2C BUS ====== -->
+  <div class="section-group">
+    <div class="section-header sh-buses">
+      <div class="icon">⟷</div>
+      Шины (I²C)
+      <div class="count">2 вывода</div>
+    </div>
+    <table class="pin-table">
+      <thead>
+        <tr>
+          <th style="width:90px">GPIO</th>
+          <th style="width:200px">Макро (config.h)</th>
+          <th style="width:120px">Направление</th>
+          <th style="width:90px">Тип шины</th>
+          <th>Оборудование</th>
+          <th style="width:220px">Примечание</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-i2c">
+          <td class="gpio-cell"><span class="gpio-num">8</span></td>
+          <td class="macro-cell">I2C_SDA_PIN</td>
+          <td class="dir-cell"><span class="dir-badge dir-io arrow-io">I/O</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-i2c">I²C</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">LCD 2004 + BME280 + DS3231</div>
+            <div class="equip-detail">Шина I²C #1 (SDA)</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-pu">PU</span>Pull-up 4.7кОм → +3.3В</td>
+        </tr>
+        <tr class="row-i2c">
+          <td class="gpio-cell"><span class="gpio-num">9</span></td>
+          <td class="macro-cell">I2C_SCL_PIN</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-i2c">I²C</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">LCD 2004 + BME280 + DS3231</div>
+            <div class="equip-detail">Шина I²C #1 (SCL)</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-pu">PU</span>Pull-up 4.7кОм → +3.3В</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ====== SECTION: SPI BUS ====== -->
+  <div class="section-group">
+    <div class="section-header sh-buses">
+      <div class="icon">⟷</div>
+      Шины (SPI HSPI)
+      <div class="count">4 вывода</div>
+    </div>
+    <table class="pin-table">
+      <thead>
+        <tr>
+          <th style="width:90px">GPIO</th>
+          <th style="width:200px">Макро (config.h)</th>
+          <th style="width:120px">Направление</th>
+          <th style="width:90px">Тип шины</th>
+          <th>Оборудование</th>
+          <th style="width:220px">Примечание</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-spi">
+          <td class="gpio-cell"><span class="gpio-num">12</span></td>
+          <td class="macro-cell">SD_SPI_MISO</td>
+          <td class="dir-cell"><span class="dir-badge dir-in arrow-in">Input</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-spi">SPI</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">MicroSD Card</div>
+            <div class="equip-detail">Данные от карты (MISO)</div>
+          </td>
+          <td class="notes-cell">HSPI, активный HIGH</td>
+        </tr>
+        <tr class="row-spi">
+          <td class="gpio-cell"><span class="gpio-num">13</span></td>
+          <td class="macro-cell">SD_SPI_MOSI</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-spi">SPI</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">MicroSD Card</div>
+            <div class="equip-detail">Данные к карте (MOSI)</div>
+          </td>
+          <td class="notes-cell">HSPI</td>
+        </tr>
+        <tr class="row-spi">
+          <td class="gpio-cell"><span class="gpio-num">14</span></td>
+          <td class="macro-cell">SD_SPI_SCK</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-spi">SPI</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">MicroSD Card</div>
+            <div class="equip-detail">Тактовый сигнал (SCK)</div>
+          </td>
+          <td class="notes-cell">HSPI, до 40 МГц</td>
+        </tr>
+        <tr class="row-spi">
+          <td class="gpio-cell"><span class="gpio-num">15</span></td>
+          <td class="macro-cell">SD_SPI_CS</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-spi">SPI</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">MicroSD Card</div>
+            <div class="equip-detail">Выбор чипа (CS)</div>
+          </td>
+          <td class="notes-cell">HSPI, активный LOW</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ====== SECTION: HEATER CONTROL ====== -->
+  <div class="section-group">
+    <div class="section-header sh-heater">
+      <div class="icon">🔥</div>
+      Управление нагревом
+      <div class="count">2 вывода</div>
+    </div>
+    <table class="pin-table">
+      <thead>
+        <tr>
+          <th style="width:90px">GPIO</th>
+          <th style="width:200px">Макро (config.h)</th>
+          <th style="width:120px">Направление</th>
+          <th style="width:90px">Тип шины</th>
+          <th>Оборудование</th>
+          <th style="width:220px">Примечание</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-220v">
+          <td class="gpio-cell"><span class="gpio-num">46</span></td>
+          <td class="macro-cell">HEATER_PIN1</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-gpio">Opto</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">РМ-2м — режим предустановки</div>
+            <div class="equip-detail">Через опторазвязку U4 CH1</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-220v">220В</span>Опторазвязка → РМ-2м</td>
+        </tr>
+        <tr class="row-220v">
+          <td class="gpio-cell"><span class="gpio-num">18</span></td>
+          <td class="macro-cell">HEATER_PIN2</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-gpio">Opto</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">РМ-2м — полная мощность</div>
+            <div class="equip-detail">Через опторазвязку U4 CH2</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-220v">220В</span>Опторазвязка → РМ-2м</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ====== SECTION: VALVE CONTROL (220V) ====== -->
+  <div class="section-group">
+    <div class="section-header sh-valves">
+      <div class="icon">🔩</div>
+      Управление клапанами (220В)
+      <div class="count">3 вывода</div>
+    </div>
+    <table class="pin-table">
+      <thead>
+        <tr>
+          <th style="width:90px">GPIO</th>
+          <th style="width:200px">Макро (config.h)</th>
+          <th style="width:120px">Направление</th>
+          <th style="width:90px">Тип шины</th>
+          <th>Оборудование</th>
+          <th style="width:220px">Примечание</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-220v">
+          <td class="gpio-cell"><span class="gpio-num">37</span></td>
+          <td class="macro-cell">VALVE_HEAD_PIN</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-ssr">SSR</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">Клапан голов 220В</div>
+            <div class="equip-detail">TZT SSR Ch.1 → HOENYZY Y1</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-220v">220В</span><span class="note-tag tag-rc">RC</span>С RC-фильтром Z1</td>
+        </tr>
+        <tr class="row-220v">
+          <td class="gpio-cell"><span class="gpio-num">38</span></td>
+          <td class="macro-cell">VALVE_BODY_PIN</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-ssr">SSR</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">Клапан тела 220В</div>
+            <div class="equip-detail">TZT SSR Ch.2 → HOENYZY Y2</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-220v">220В</span><span class="note-tag tag-rc">RC</span>С RC-фильтром Z2</td>
+        </tr>
+        <tr class="row-220v">
+          <td class="gpio-cell"><span class="gpio-num">42</span></td>
+          <td class="macro-cell">CONTACTOR_PIN</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-ssr">SSR</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">Контактор 220В</div>
+            <div class="equip-detail">TZT SSR Ch.3 → PLTEK 25А K1</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-220v">220В</span>Катушка A1-A2</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ====== SECTION: 12V LOADS ====== -->
+  <div class="section-group">
+    <div class="section-header sh-12v">
+      <div class="icon">⚡</div>
+      Управление 12В нагрузками
+      <div class="count">2 вывода</div>
+    </div>
+    <table class="pin-table">
+      <thead>
+        <tr>
+          <th style="width:90px">GPIO</th>
+          <th style="width:200px">Макро (config.h)</th>
+          <th style="width:120px">Направление</th>
+          <th style="width:90px">Тип шины</th>
+          <th>Оборудование</th>
+          <th style="width:220px">Примечание</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-12v">
+          <td class="gpio-cell"><span class="gpio-num">2</span></td>
+          <td class="macro-cell">VALVE_WATER_PIN</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-ssr">SSR</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">Клапан подачи воды 12В</div>
+            <div class="equip-detail">ENMG SSR #1 → Y3</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-12v">12В</span>Нижний ряд SSR</td>
+        </tr>
+        <tr class="row-12v">
+          <td class="gpio-cell"><span class="gpio-num">47</span></td>
+          <td class="macro-cell">MIXER_PIN</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-ssr">SSR</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">Мешалка 12В</div>
+            <div class="equip-detail">ENMG SSR #2 → M1 двигатель</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-12v">12В</span>Нижний ряд SSR</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ====== SECTION: BUZZER ====== -->
+  <div class="section-group">
+    <div class="section-header sh-buzzer">
+      <div class="icon">🔔</div>
+      Сигнализация
+      <div class="count">1 вывод</div>
+    </div>
+    <table class="pin-table">
+      <thead>
+        <tr>
+          <th style="width:90px">GPIO</th>
+          <th style="width:200px">Макро (config.h)</th>
+          <th style="width:120px">Направление</th>
+          <th style="width:90px">Тип шины</th>
+          <th>Оборудование</th>
+          <th style="width:220px">Примечание</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-buzzer">
+          <td class="gpio-cell"><span class="gpio-num">21</span></td>
+          <td class="macro-cell">BUZZER_PIN</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-gpio">GPIO</span></td>
+          <td class="equip-cell">
+            <div class="equip-main">Зуммер KY-012</div>
+            <div class="equip-detail">Активный зуммер 3.3В</div>
+          </td>
+          <td class="notes-cell">HIGH = включен, VCC=3.3В</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ====== SECTION: SPARE ====== -->
+  <div class="section-group">
+    <div class="section-header sh-spare">
+      <div class="icon">○</div>
+      Запасные каналы
+      <div class="count">3 вывода</div>
+    </div>
+    <table class="pin-table">
+      <thead>
+        <tr>
+          <th style="width:90px">GPIO</th>
+          <th style="width:200px">Макро (config.h)</th>
+          <th style="width:120px">Направление</th>
+          <th style="width:90px">Тип шины</th>
+          <th>Оборудование</th>
+          <th style="width:220px">Примечание</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-spare">
+          <td class="gpio-cell"><span class="gpio-num">16</span></td>
+          <td class="macro-cell">SPARE_RELAY1</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-ssr">SSR</span></td>
+          <td class="equip-cell">
+            <div class="equip-main" style="color:var(--clr-spare)">ENMG SSR #3 (запасной)</div>
+            <div class="equip-detail">Верхний ряд, канал свободен</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-12v">12В</span>Резерв</td>
+        </tr>
+        <tr class="row-spare">
+          <td class="gpio-cell"><span class="gpio-num">17</span></td>
+          <td class="macro-cell">SPARE_RELAY2</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-ssr">SSR</span></td>
+          <td class="equip-cell">
+            <div class="equip-main" style="color:var(--clr-spare)">ENMG SSR #4 (запасной)</div>
+            <div class="equip-detail">Верхний ряд, канал свободен</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-12v">12В</span>Резерв</td>
+        </tr>
+        <tr class="row-spare">
+          <td class="gpio-cell"><span class="gpio-num">48</span></td>
+          <td class="macro-cell">SPARE_RELAY3</td>
+          <td class="dir-cell"><span class="dir-badge dir-out arrow-out">Output</span></td>
+          <td class="bus-cell"><span class="bus-badge bus-ssr">SSR</span></td>
+          <td class="equip-cell">
+            <div class="equip-main" style="color:var(--clr-spare)">TZT SSR Ch.4 (запасной)</div>
+            <div class="equip-detail">220В канал свободен</div>
+          </td>
+          <td class="notes-cell"><span class="note-tag tag-220v">220В</span>Резерв</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ====== SUMMARY SECTION ====== -->
+  <div class="summary-section">
+    <h2>📊 Сводка назначений выводов</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="sc-value sc-accent-blue">21</div>
+        <div class="sc-label">GPIO задействовано</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-value sc-accent-green">5</div>
+        <div class="sc-label">Входов (Input)</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-value sc-accent-red">16</div>
+        <div class="sc-label">Выходов (Output)</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-value sc-accent-teal">3</div>
+        <div class="sc-label">Устройства I²C</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-value sc-accent-purple">1</div>
+        <div class="sc-label">Устройство SPI</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-value sc-accent-green">4</div>
+        <div class="sc-label">Датчика 1-Wire</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-value sc-accent-orange">8</div>
+        <div class="sc-label">Каналов SSR</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-value sc-accent-gray">3</div>
+        <div class="sc-label">Запасных GPIO</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== DETAIL CARDS ====== -->
+  <div class="detail-section">
+    <!-- I2C Address Table -->
+    <div class="detail-card">
+      <div class="detail-card-header dch-i2c">
+        <div class="dc-icon">I²C</div>
+        Таблица адресов I²C
+      </div>
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>Устройство</th>
+            <th>Адрес (HEX)</th>
+            <th>Dec</th>
+            <th>SDO / ADDR</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>LCD 2004 (PCF8574)</td>
+            <td><span class="addr-mono">0x27</span></td>
+            <td class="addr-dec">(39)</td>
+            <td>A0-A2 = HHH</td>
+          </tr>
+          <tr>
+            <td>BME280</td>
+            <td><span class="addr-mono">0x76</span></td>
+            <td class="addr-dec">(118)</td>
+            <td>SDO = GND</td>
+          </tr>
+          <tr>
+            <td>DS3231 RTC</td>
+            <td><span class="addr-mono">0x68</span></td>
+            <td class="addr-dec">(104)</td>
+            <td>Fixed</td>
+          </tr>
+          <tr>
+            <td>AT24C32 EEPROM</td>
+            <td><span class="addr-mono">0x57</span></td>
+            <td class="addr-dec">(87)</td>
+            <td>A0-A2 = GND</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SSR Channel Map -->
+    <div class="detail-card">
+      <div class="detail-card-header dch-ssr">
+        <div class="dc-icon">SSR</div>
+        Карта каналов SSR
+      </div>
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>Канал</th>
+            <th>Тип</th>
+            <th>GPIO</th>
+            <th>Нагрузка</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>TZT Ch.1</td>
+            <td><span class="ssr-type-tzt">TZT</span></td>
+            <td class="macro-cell">GPIO37</td>
+            <td>Клапан голов 220В</td>
+          </tr>
+          <tr>
+            <td>TZT Ch.2</td>
+            <td><span class="ssr-type-tzt">TZT</span></td>
+            <td class="macro-cell">GPIO38</td>
+            <td>Клапан тела 220В</td>
+          </tr>
+          <tr>
+            <td>TZT Ch.3</td>
+            <td><span class="ssr-type-tzt">TZT</span></td>
+            <td class="macro-cell">GPIO42</td>
+            <td>Контактор K1 220В</td>
+          </tr>
+          <tr>
+            <td>TZT Ch.4</td>
+            <td><span class="ssr-type-tzt">TZT</span></td>
+            <td class="macro-cell">GPIO48</td>
+            <td style="color:var(--clr-spare)">Запасной</td>
+          </tr>
+          <tr>
+            <td>ENMG #1</td>
+            <td><span class="ssr-type-enmg">ENMG</span></td>
+            <td class="macro-cell">GPIO2</td>
+            <td>Клапан воды 12В</td>
+          </tr>
+          <tr>
+            <td>ENMG #2</td>
+            <td><span class="ssr-type-enmg">ENMG</span></td>
+            <td class="macro-cell">GPIO47</td>
+            <td>Мешалка 12В</td>
+          </tr>
+          <tr>
+            <td>ENMG #3</td>
+            <td><span class="ssr-type-enmg">ENMG</span></td>
+            <td class="macro-cell">GPIO16</td>
+            <td style="color:var(--clr-spare)">Запасной</td>
+          </tr>
+          <tr>
+            <td>ENMG #4</td>
+            <td><span class="ssr-type-enmg">ENMG</span></td>
+            <td class="macro-cell">GPIO17</td>
+            <td style="color:var(--clr-spare)">Запасной</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Free GPIOs -->
+    <div class="detail-card">
+      <div class="detail-card-header dch-free">
+        <div class="dc-icon">○</div>
+        Свободные GPIO (кроме задействованных)
+      </div>
+      <div class="free-gpio-list">
+        <span class="free-gpio-chip">GPIO1</span>
+        <span class="free-gpio-chip">GPIO10</span>
+        <span class="free-gpio-chip">GPIO11</span>
+        <span class="free-gpio-chip">GPIO19</span>
+        <span class="free-gpio-chip">GPIO20</span>
+        <span class="free-gpio-chip">GPIO35</span>
+        <span class="free-gpio-chip">GPIO36</span>
+        <span class="free-gpio-chip">GPIO39</span>
+        <span class="free-gpio-chip">GPIO40</span>
+        <span class="free-gpio-chip">GPIO41</span>
+        <span class="free-gpio-chip">GPIO43</span>
+        <span class="free-gpio-chip">GPIO44</span>
+        <span class="free-gpio-chip">GPIO45</span>
+      </div>
+    </div>
+
+    <!-- Voltage Domains -->
+    <div class="detail-card">
+      <div class="detail-card-header dch-volt">
+        <div class="dc-icon">⚡</div>
+        Домены питания
+      </div>
+      <div class="volt-domain">
+        <div class="vd-item">
+          <div class="vd-dot" style="background:#ef4444"></div>
+          <div class="vd-label" style="color:#f87171">220В AC</div>
+          <div class="vd-desc">ТЭН, клапаны HOENYZY, контактор PLTEK (через TZT SSR)</div>
+        </div>
+        <div class="vd-item">
+          <div class="vd-dot" style="background:#f97316"></div>
+          <div class="vd-label" style="color:#fb923c">12В DC</div>
+          <div class="vd-desc">Клапан воды, мешалка (через ENMG SSR, от RS-15-12)</div>
+        </div>
+        <div class="vd-item">
+          <div class="vd-dot" style="background:#3b82f6"></div>
+          <div class="vd-label" style="color:#60a5fa">5В DC</div>
+          <div class="vd-desc">ESP32-S3 питание, TZT SSR VCC, ENMG SSR VCC (от RS-15-5)</div>
+        </div>
+        <div class="vd-item">
+          <div class="vd-dot" style="background:#67e8f9"></div>
+          <div class="vd-label" style="color:#67e8f9">3.3В DC</div>
+          <div class="vd-desc">GPIO логика, I²C pull-up, 1-Wire pull-up, зуммер, кнопки pull-up</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== FOOTER ====== -->
+  <div class="footer">
+    <div>BuhloWar v2.0 — Таблица распиновки ESP32-S3-DevKitC-1</div>
+    <div class="sheet-info">Лист 4 из 4 — 2025-03-04 — Рев. A</div>
+  </div>
+
+</div>
+</body>
+</html>

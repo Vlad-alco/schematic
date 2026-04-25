@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Блок-схема системы управления самогонным аппаратом — BuhloWar v2.0</title>
+<style>
+:root {
+  --text: #111827;
+  --text-sub: #6B7280;
+  --bg: #FFFFFF;
+  --surface: #F9FAFB;
+  --border: #E5E7EB;
+  --blue: #3B82F6;
+  --red: #EF4444;
+  --orange: #F59E0B;
+  --green: #10B981;
+  --connector: #94A3B8;
+  --ac220: #FECACA;
+  --ac220-border: #EF4444;
+  --dc12: #FDE68A;
+  --dc12-border: #F59E0B;
+  --dc5: #BFDBFE;
+  --dc5-border: #3B82F6;
+  --dc33: #BFDBFE;
+  --dc33-border: #60A5FA;
+  --sensor-bg: #D1FAE5;
+  --sensor-border: #10B981;
+  --ui-bg: #E0E7FF;
+  --ui-border: #6366F1;
+  --storage-bg: #FCE7F3;
+  --storage-border: #EC4899;
+  --esp-bg: #FEF3C7;
+  --esp-border: #D97706;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.diagram-container {
+  position: relative;
+  width: 1500px;
+  height: 1320px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Title */
+.title {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 52px;
+  background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+  color: #F8FAFC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  z-index: 10;
+  border-radius: 12px 12px 0 0;
+}
+.title span { opacity: 0.7; font-weight: 400; margin-left: 12px; font-size: 14px; }
+
+/* SVG overlay */
+.svg-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Section groups */
+.section-group {
+  position: absolute;
+  border: 1.5px dashed;
+  border-radius: 10px;
+  z-index: 1;
+}
+.section-label {
+  position: absolute;
+  top: -11px;
+  left: 16px;
+  background: var(--surface);
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  z-index: 2;
+}
+
+/* Block component */
+.block {
+  position: absolute;
+  border-radius: 8px;
+  border: 1.5px solid;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.35;
+  z-index: 3;
+  background: var(--bg);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s;
+}
+.block:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  z-index: 6;
+}
+.block-title {
+  font-weight: 700;
+  font-size: 12.5px;
+  margin-bottom: 2px;
+}
+.block-sub {
+  font-size: 10.5px;
+  color: var(--text-sub);
+  line-height: 1.3;
+}
+
+/* Voltage domain colors */
+.block-ac220 { background: var(--ac220); border-color: var(--ac220-border); }
+.block-dc12   { background: var(--dc12);   border-color: var(--dc12-border); }
+.block-dc5    { background: var(--dc5);    border-color: var(--dc5-border); }
+.block-dc33   { background: var(--dc33);   border-color: var(--dc33-border); }
+.block-sensor { background: var(--sensor-bg); border-color: var(--sensor-border); }
+.block-ui     { background: var(--ui-bg);    border-color: var(--ui-border); }
+.block-storage{ background: var(--storage-bg);border-color: var(--storage-border); }
+.block-esp    { background: var(--esp-bg);   border-color: var(--esp-border); }
+
+/* Voltage badge */
+.v-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.v-badge-ac220 { background: #FCA5A5; color: #7F1D1D; }
+.v-badge-dc12  { background: #FCD34D; color: #78350F; }
+.v-badge-dc5   { background: #93C5FD; color: #1E3A5F; }
+.v-badge-dc33  { background: #93C5FD; color: #1E3A5F; }
+
+/* Legend */
+.legend {
+  position: absolute;
+  bottom: 16px;
+  left: 24px;
+  display: flex;
+  gap: 20px;
+  font-size: 11px;
+  color: var(--text-sub);
+  z-index: 10;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1.5px solid;
+}
+
+/* Port dots */
+.port {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid;
+  z-index: 4;
+}
+.port-ac220 { background: var(--ac220); border-color: var(--ac220-border); }
+.port-dc12  { background: var(--dc12);   border-color: var(--dc12-border); }
+.port-dc5   { background: var(--dc5);    border-color: var(--dc5-border); }
+.port-dc33  { background: var(--dc33);   border-color: var(--dc33-border); }
+.port-data  { background: #D1FAE5;       border-color: #10B981; }
+.port-ctrl  { background: #E0E7FF;       border-color: #6366F1; }
+
+/* ESP32 central block special styling */
+.block-esp {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border-color: #D97706;
+  border-width: 2.5px;
+  box-shadow: 0 2px 8px rgba(217,119,6,0.2);
+  text-align: center;
+}
+.block-esp .block-title {
+  font-size: 15px;
+  color: #92400E;
+}
+.block-esp .block-sub {
+  font-size: 11px;
+}
+
+/* Channel label inside SSR blocks */
+.ch-label {
+  font-size: 10px;
+  color: var(--text-sub);
+  font-style: italic;
+}
+</style>
+</head>
+<body>
+
+<div class="diagram-container" id="diagram">
+
+  <!-- Title -->
+  <div class="title">
+    Блок-схема системы управления самогонным аппаратом — BuhloWar v2.0
+    <span>ESP32-S3-DevKitC-1</span>
+  </div>
+
+  <!-- ============== SECTION: POWER ============== -->
+  <div class="section-group" style="top:64px; left:24px; width:1452px; height:244px; border-color:#F87171; background:rgba(254,202,202,0.08);">
+    <div class="section-label" style="color:#DC2626;">Секция питания</div>
+  </div>
+
+  <!-- 220V AC Mains -->
+  <div class="block block-ac220" id="b-mains" style="top:88px; left:44px; width:120px; height:56px;">
+    <div class="block-title">220В АС</div>
+    <div class="block-sub">Сеть</div>
+    <span class="v-badge v-badge-ac220">220V AC</span>
+  </div>
+
+  <!-- Дифавтомат -->
+  <div class="block block-ac220" id="b-rcbo" style="top:88px; left:224px; width:174px; height:56px;">
+    <div class="block-title">Дифавтомат 2P 20A</div>
+    <div class="block-sub">RCBO</div>
+    <span class="v-badge v-badge-ac220">220V AC</span>
+  </div>
+
+  <!-- Вольтметр -->
+  <div class="block block-ac220" id="b-voltmeter" style="top:88px; left:470px; width:156px; height:56px;">
+    <div class="block-title">Вольтметр TOMZN</div>
+    <div class="block-sub">мониторинг</div>
+    <span class="v-badge v-badge-ac220">220V AC</span>
+  </div>
+
+  <!-- БП 5V -->
+  <div class="block block-dc5" id="b-psu5" style="top:194px; left:120px; width:200px; height:72px;">
+    <div class="block-title">БП RS-15-5</div>
+    <div class="block-sub">5В / 3А<br>ESP32, LCD, BME280, RTC, SD, кнопки</div>
+    <span class="v-badge v-badge-dc5">5V DC</span>
+  </div>
+
+  <!-- БП 12V -->
+  <div class="block block-dc12" id="b-psu12" style="top:194px; left:380px; width:200px; height:72px;">
+    <div class="block-title">БП RS-15-12</div>
+    <div class="block-sub">12В / 1.3А<br>Входы ENMG SSR</div>
+    <span class="v-badge v-badge-dc12">12V DC</span>
+  </div>
+
+  <!-- Контактор -->
+  <div class="block block-ac220" id="b-contactor" style="top:88px; left:770px; width:200px; height:56px;">
+    <div class="block-title">Контактор PLTEK 25А</div>
+    <div class="block-sub">подача питания на РМ-2м</div>
+    <span class="v-badge v-badge-ac220">220V AC</span>
+  </div>
+
+  <!-- РМ-2м -->
+  <div class="block block-ac220" id="b-rm2m" style="top:88px; left:1030px; width:220px; height:56px;">
+    <div class="block-title">Регулятор мощности</div>
+    <div class="block-sub">РМ-2м 32А → ТЭН</div>
+    <span class="v-badge v-badge-ac220">220V AC</span>
+  </div>
+
+  <!-- ТЭН -->
+  <div class="block block-ac220" id="b-ten" style="top:88px; left:1310px; width:140px; height:56px;">
+    <div class="block-title">ТЭН</div>
+    <div class="block-sub">нагреватель</div>
+    <span class="v-badge v-badge-ac220">220V AC</span>
+  </div>
+
+  <!-- ============== SECTION: SENSORS ============== -->
+  <div class="section-group" style="top:336px; left:24px; width:310px; height:408px; border-color:#34D399; background:rgba(209,250,229,0.08);">
+    <div class="section-label" style="color:#059669;">Датчики</div>
+  </div>
+
+  <!-- BME280 -->
+  <div class="block block-sensor" id="b-bme280" style="top:366px; left:44px; width:270px; height:72px;">
+    <div class="block-title">BME280</div>
+    <div class="block-sub">Температура / Влажность / Давление<br>Шина I²C</div>
+  </div>
+
+  <!-- DS18B20 x4 -->
+  <div class="block block-sensor" id="b-ds18b20" style="top:468px; left:44px; width:270px; height:72px;">
+    <div class="block-title">DS18B20 ×4</div>
+    <div class="block-sub">Датчики температуры<br>Шина 1-Wire</div>
+  </div>
+
+  <!-- DS3231 RTC -->
+  <div class="block block-sensor" id="b-rtc" style="top:570px; left:44px; width:270px; height:72px;">
+    <div class="block-title">DS3231 RTC</div>
+    <div class="block-sub">Часы реального времени<br>Шина I²C</div>
+  </div>
+
+  <!-- ============== SECTION: ESP32 ============== -->
+  <div class="block block-esp" id="b-esp32" style="top:410px; left:510px; width:280px; height:160px;">
+    <div class="block-title">ESP32-S3-DevKitC-1</div>
+    <div class="block-sub" style="margin-top:6px;">
+      Контроллер<br>
+      GPIO · I²C · 1-Wire · SPI<br>
+      <span style="font-size:10px; color:#92400E;">BuhloWar v2.0</span>
+    </div>
+  </div>
+
+  <!-- ============== SECTION: LOADS ============== -->
+  <div class="section-group" style="top:336px; left:870px; width:606px; height:580px; border-color:#F97316; background:rgba(254,215,170,0.06);">
+    <div class="section-label" style="color:#EA580C;">Управляемые нагрузки</div>
+  </div>
+
+  <!-- TZT SSR 4-ch -->
+  <div class="block block-dc5" id="b-tzt-ssr" style="top:366px; left:890px; width:220px; height:140px;">
+    <div class="block-title">TZT SSR 4-канальный</div>
+    <div class="block-sub">
+      Логика 5В, выход 240В/2А<br>
+      <span class="ch-label">К1: Клапан голов</span><br>
+      <span class="ch-label">К2: Клапан тела</span><br>
+      <span class="ch-label">К3: Контактор (катушка)</span><br>
+      <span class="ch-label">К4: Запасной</span>
+    </div>
+    <span class="v-badge v-badge-dc5">5V</span>
+    <span class="v-badge v-badge-ac220">220V</span>
+  </div>
+
+  <!-- Клапан голов -->
+  <div class="block block-ac220" id="b-valve-head" style="top:362px; left:1190px; width:260px; height:56px;">
+    <div class="block-title">Клапан голов HOENYZY</div>
+    <div class="block-sub">220В + RC-фильтр Stlxy</div>
+    <span class="v-badge v-badge-ac220">220V AC</span>
+  </div>
+
+  <!-- Клапан тела -->
+  <div class="block block-ac220" id="b-valve-body" style="top:430px; left:1190px; width:260px; height:56px;">
+    <div class="block-title">Клапан тела HOENYZY</div>
+    <div class="block-sub">220В + RC-фильтр Stlxy</div>
+    <span class="v-badge v-badge-ac220">220V AC</span>
+  </div>
+
+  <!-- (Контактор already in power section; connection from TZT Ch3) -->
+
+  <!-- Запасной TZT -->
+  <div class="block block-dc5" id="b-tzt-spare" style="top:498px; left:1190px; width:260px; height:42px; opacity:0.6;">
+    <div class="block-title">Запасной (К4)</div>
+    <span class="v-badge v-badge-ac220">220V</span>
+  </div>
+
+  <!-- ENMG SSR x4 -->
+  <div class="block block-dc12" id="b-enmg-ssr" style="top:556px; left:890px; width:220px; height:160px;">
+    <div class="block-title">ENMG SSR ×4</div>
+    <div class="block-sub">
+      Вход 3–32В, ключ 240В<br>
+      <span class="ch-label">SSR1: Мешалка</span><br>
+      <span class="ch-label">SSR2: Клапан воды</span><br>
+      <span class="ch-label">SSR3: Запасной</span><br>
+      <span class="ch-label">SSR4: Запасной</span>
+    </div>
+    <span class="v-badge v-badge-dc12">12V</span>
+  </div>
+
+  <!-- Мешалка -->
+  <div class="block block-dc12" id="b-mixer" style="top:560px; left:1190px; width:260px; height:50px;">
+    <div class="block-title">Мешалка</div>
+    <div class="block-sub">12В DC</div>
+    <span class="v-badge v-badge-dc12">12V DC</span>
+  </div>
+
+  <!-- Клапан воды -->
+  <div class="block block-dc12" id="b-valve-water" style="top:622px; left:1190px; width:260px; height:50px;">
+    <div class="block-title">Клапан воды</div>
+    <div class="block-sub">12В DC</div>
+    <span class="v-badge v-badge-dc12">12V DC</span>
+  </div>
+
+  <!-- Запасной ENMG 1 -->
+  <div class="block block-dc12" id="b-enmg-spare1" style="top:684px; left:1190px; width:260px; height:42px; opacity:0.6;">
+    <div class="block-title">Запасной (SSR3)</div>
+    <span class="v-badge v-badge-dc12">12V</span>
+  </div>
+
+  <!-- Запасной ENMG 2 -->
+  <div class="block block-dc12" id="b-enmg-spare2" style="top:736px; left:1190px; width:260px; height:42px; opacity:0.6;">
+    <div class="block-title">Запасной (SSR4)</div>
+    <span class="v-badge v-badge-dc12">12V</span>
+  </div>
+
+  <!-- ============== SECTION: UI ============== -->
+  <div class="section-group" style="top:860px; left:24px; width:780px; height:170px; border-color:#818CF8; background:rgba(224,231,255,0.08);">
+    <div class="section-label" style="color:#4F46E5;">Интерфейс пользователя</div>
+  </div>
+
+  <!-- LCD 2004 -->
+  <div class="block block-ui" id="b-lcd" style="top:890px; left:44px; width:220px; height:64px;">
+    <div class="block-title">LCD 2004</div>
+    <div class="block-sub">+ I²C конвертер<br>Шина I²C</div>
+  </div>
+
+  <!-- Кнопки -->
+  <div class="block block-ui" id="b-buttons" style="top:890px; left:300px; width:240px; height:64px;">
+    <div class="block-title">4 кнопки APWIKOGER</div>
+    <div class="block-sub">Down / Up / Set / Back<br>GPIO</div>
+  </div>
+
+  <!-- Зуммер -->
+  <div class="block block-ui" id="b-buzzer" style="top:890px; left:576px; width:200px; height:64px;">
+    <div class="block-title">Зуммер KY-012</div>
+    <div class="block-sub">Звуковая сигнализация<br>GPIO</div>
+  </div>
+
+  <!-- ============== SECTION: STORAGE ============== -->
+  <div class="section-group" style="top:860px; left:830px; width:270px; height:170px; border-color:#F472B6; background:rgba(252,231,243,0.08);">
+    <div class="section-label" style="color:#DB2777;">Накопитель</div>
+  </div>
+
+  <!-- MicroSD -->
+  <div class="block block-storage" id="b-sd" style="top:900px; left:860px; width:210px; height:72px;">
+    <div class="block-title">MicroSD модуль</div>
+    <div class="block-sub">Карта памяти<br>Шина SPI</div>
+  </div>
+
+  <!-- ============== POWER FLOW LABELS ============== -->
+  <div style="position:absolute; top:164px; left:150px; font-size:10px; color:var(--ac220-border); font-weight:600; z-index:4;">220В АС</div>
+  <div style="position:absolute; top:280px; left:196px; font-size:10px; color:var(--dc5-border); font-weight:600; z-index:4;">5В DC</div>
+  <div style="position:absolute; top:280px; left:456px; font-size:10px; color:var(--dc12-border); font-weight:600; z-index:4;">12В DC</div>
+
+  <!-- ============== SVG CONNECTIONS ============== -->
+  <svg class="svg-overlay" viewBox="0 0 1500 1320" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Arrow markers -->
+      <marker id="arrow-ac220" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#EF4444"/>
+      </marker>
+      <marker id="arrow-dc12" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#F59E0B"/>
+      </marker>
+      <marker id="arrow-dc5" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#3B82F6"/>
+      </marker>
+      <marker id="arrow-data" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#10B981"/>
+      </marker>
+      <marker id="arrow-ctrl" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#6366F1"/>
+      </marker>
+      <marker id="arrow-spi" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#EC4899"/>
+      </marker>
+    </defs>
+
+    <!-- ===== POWER SECTION CONNECTIONS ===== -->
+    <!-- 220V Mains → Дифавтомат -->
+    <line x1="164" y1="116" x2="224" y2="116" stroke="#EF4444" stroke-width="2.5" marker-end="url(#arrow-ac220)"/>
+
+    <!-- Дифавтомат → Вольтметр -->
+    <line x1="398" y1="116" x2="470" y2="116" stroke="#EF4444" stroke-width="2" marker-end="url(#arrow-ac220)" stroke-dasharray="6,3"/>
+
+    <!-- Дифавтомат → БП 5V (down-left) -->
+    <path d="M280,144 L280,164 Q280,174 270,174 L250,174 Q240,174 240,184 L240,194" fill="none" stroke="#3B82F6" stroke-width="2" marker-end="url(#arrow-dc5)"/>
+
+    <!-- Дифавтомат → БП 12V (down-right) -->
+    <path d="M340,144 L340,164 Q340,174 360,174 L460,174 Q470,174 470,184 L470,194" fill="none" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrow-dc12)"/>
+
+    <!-- Дифавтомат → Контактор (подача питания) -->
+    <line x1="398" y1="100" x2="460" y2="90" stroke="#EF4444" stroke-width="2" stroke-dasharray="6,3"/>
+    <line x1="460" y1="90" x2="770" y2="100" stroke="#EF4444" stroke-width="2" marker-end="url(#arrow-ac220)"/>
+
+    <!-- Контактор → РМ-2м (коммутирует питание) -->
+    <line x1="970" y1="116" x2="1030" y2="116" stroke="#EF4444" stroke-width="2.5" marker-end="url(#arrow-ac220)"/>
+
+    <!-- РМ-2м → ТЭН (регулируемая мощность) -->
+    <line x1="1250" y1="116" x2="1310" y2="116" stroke="#EF4444" stroke-width="3" marker-end="url(#arrow-ac220)"/>
+
+    <!-- БП 5V → ESP32 (down then right) -->
+    <path d="M220,266 L220,330 Q220,345 240,345 L510,345 Q520,345 520,355 L520,410" fill="none" stroke="#3B82F6" stroke-width="2" marker-end="url(#arrow-dc5)" stroke-dasharray="6,3"/>
+    <text x="340" y="339" font-size="9" fill="#3B82F6" font-weight="600">5В питание</text>
+
+    <!-- БП 12V → ENMG SSR (down then right) -->
+    <path d="M480,266 L480,300 Q480,310 500,310 L860,310 Q870,310 870,320 L870,556" fill="none" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrow-dc12)" stroke-dasharray="6,3"/>
+    <text x="650" y="304" font-size="9" fill="#F59E0B" font-weight="600">12В питание SSR</text>
+
+    <!-- ===== SENSOR CONNECTIONS ===== -->
+    <!-- BME280 → ESP32 (I2C) -->
+    <path d="M314,402 L400,402 Q410,402 410,412 L410,450 Q410,460 420,460 L510,460" fill="none" stroke="#10B981" stroke-width="2" marker-end="url(#arrow-data)"/>
+    <text x="395" y="440" font-size="9" fill="#10B981" font-weight="600" transform="rotate(-90,395,440)">I²C</text>
+
+    <!-- DS18B20 → ESP32 (1-Wire) -->
+    <path d="M314,504 L400,504 Q410,504 410,494 L410,490 Q410,484 420,484 L510,484" fill="none" stroke="#10B981" stroke-width="2" marker-end="url(#arrow-data)"/>
+    <text x="395" y="530" font-size="9" fill="#10B981" font-weight="600">1-Wire</text>
+
+    <!-- DS3231 → ESP32 (I2C) -->
+    <path d="M314,606 L430,606 Q440,606 440,596 L440,510 Q440,504 450,504 L510,504" fill="none" stroke="#10B981" stroke-width="2" marker-end="url(#arrow-data)"/>
+    <text x="425" y="558" font-size="9" fill="#10B981" font-weight="600" transform="rotate(-90,425,558)">I²C</text>
+
+    <!-- ===== ESP32 → SSR CONTROL CONNECTIONS ===== -->
+    <!-- ESP32 → TZT SSR (GPIO control, 5V logic) -->
+    <path d="M790,450 L840,450 Q850,450 850,436 L850,410 Q850,400 860,400 L890,400" fill="none" stroke="#6366F1" stroke-width="2" marker-end="url(#arrow-ctrl)"/>
+    <text x="822" y="418" font-size="9" fill="#6366F1" font-weight="600">GPIO</text>
+
+    <!-- ESP32 → ENMG SSR (GPIO control) -->
+    <path d="M790,500 L840,500 Q850,500 850,510 L850,600 Q850,610 860,610 L890,610" fill="none" stroke="#6366F1" stroke-width="2" marker-end="url(#arrow-ctrl)"/>
+    <text x="825" y="560" font-size="9" fill="#6366F1" font-weight="600">GPIO</text>
+
+    <!-- ===== TZT SSR → LOADS ===== -->
+    <!-- TZT Ch1 → Клапан голов -->
+    <line x1="1110" y1="390" x2="1190" y2="385" stroke="#EF4444" stroke-width="2" marker-end="url(#arrow-ac220)"/>
+
+    <!-- TZT Ch2 → Клапан тела -->
+    <line x1="1110" y1="420" x2="1190" y2="455" stroke="#EF4444" stroke-width="2" marker-end="url(#arrow-ac220)"/>
+
+    <!-- TZT Ch3 → Контактор (control coil) - curved path up and right -->
+    <path d="M1110,448 L1140,448 Q1150,448 1150,438 L1150,144 Q1150,134 1140,134 L970,134 Q960,116 960,116" fill="none" stroke="#6366F1" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <!-- Label for contactor control -->
+    <text x="1152" y="290" font-size="9" fill="#6366F1" font-weight="600" transform="rotate(-90,1152,290)">Упр. катушкой K1</text>
+
+    <!-- ESP32 GPIO46/GPIO18 → Опторазвязка → РМ-2м (режимы нагрева) -->
+    <path d="M790,470 L830,470 Q840,470 840,460 L840,200 Q840,150 900,140 L1030,140 Q1040,140 1040,144" fill="none" stroke="#7722CC" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-ctrl)"/>
+    <text x="850" y="180" font-size="8" fill="#7722CC" font-weight="600">GPIO46/GPIO18</text>
+    <text x="850" y="192" font-size="7" fill="#7722CC">Опторазвязка → РМ-2м</text>
+
+    <!-- TZT Ch4 → Запасной -->
+    <line x1="1110" y1="475" x2="1190" y2="510" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+    <!-- ===== ENMG SSR → LOADS ===== -->
+    <!-- ENMG SSR1 → Мешалка -->
+    <line x1="1110" y1="588" x2="1190" y2="582" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrow-dc12)"/>
+
+    <!-- ENMG SSR2 → Клапан воды -->
+    <line x1="1110" y1="620" x2="1190" y2="642" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrow-dc12)"/>
+
+    <!-- ENMG SSR3 → Запасной1 -->
+    <line x1="1110" y1="650" x2="1190" y2="700" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+    <!-- ENMG SSR4 → Запасной2 -->
+    <line x1="1110" y1="675" x2="1190" y2="750" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+    <!-- ===== UI CONNECTIONS ===== -->
+    <!-- ESP32 → LCD (I2C down) -->
+    <path d="M560,570 L560,620 Q560,630 550,630 L170,630 Q160,630 160,640 L160,750 Q160,760 155,760 L155,890" fill="none" stroke="#10B981" stroke-width="2" marker-end="url(#arrow-data)"/>
+    <text x="300" y="624" font-size="9" fill="#10B981" font-weight="600">I²C</text>
+
+    <!-- ESP32 → Кнопки (GPIO down) -->
+    <path d="M620,570 L620,660 Q620,670 610,670 L430,670 Q420,670 420,680 L420,890" fill="none" stroke="#6366F1" stroke-width="2" marker-end="url(#arrow-ctrl)"/>
+    <text x="500" y="664" font-size="9" fill="#6366F1" font-weight="600">GPIO</text>
+
+    <!-- ESP32 → Зуммер (GPIO down-right) -->
+    <path d="M680,570 L680,700 Q680,710 690,710 L676,710 Q676,710 676,720 L676,890" fill="none" stroke="#6366F1" stroke-width="2" marker-end="url(#arrow-ctrl)"/>
+    <text x="690" y="704" font-size="9" fill="#6366F1" font-weight="600">GPIO</text>
+
+    <!-- ===== STORAGE CONNECTION ===== -->
+    <!-- ESP32 → MicroSD (SPI) -->
+    <path d="M740,570 L740,830 Q740,840 760,840 L960,840 Q965,840 965,860 L965,900" fill="none" stroke="#EC4899" stroke-width="2" marker-end="url(#arrow-spi)"/>
+    <text x="820" y="834" font-size="9" fill="#EC4899" font-weight="600">SPI</text>
+
+    <!-- ===== POWER RAIL INDICATORS ===== -->
+    <!-- 5V power bus line (thin, along left side) -->
+    <line x1="34" y1="350" x2="34" y2="950" stroke="#3B82F6" stroke-width="1" stroke-dasharray="3,5" opacity="0.4"/>
+    <text x="6" y="650" font-size="8" fill="#3B82F6" opacity="0.6" transform="rotate(-90,6,650)">ШИНА 5В</text>
+
+    <!-- 3.3V annotation near ESP32 -->
+    <text x="520" y="575" font-size="9" fill="#60A5FA" font-weight="500">3.3В логика</text>
+
+  </svg>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--ac220); border-color:var(--ac220-border);"></div>
+      <span>220В АС</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--dc12); border-color:var(--dc12-border);"></div>
+      <span>12В DC</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--dc5); border-color:var(--dc5-border);"></div>
+      <span>5В DC</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--dc33); border-color:var(--dc33-border);"></div>
+      <span>3.3В DC</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--sensor-bg); border-color:var(--sensor-border);"></div>
+      <span>Датчики</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--ui-bg); border-color:var(--ui-border);"></div>
+      <span>Интерфейс</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--storage-bg); border-color:var(--storage-border);"></div>
+      <span>Накопитель</span>
+    </div>
+    <div class="legend-item" style="margin-left:16px;">
+      <svg width="24" height="12"><line x1="0" y1="6" x2="24" y2="6" stroke="#EF4444" stroke-width="2"/></svg>
+      <span>Питание 220В</span>
+    </div>
+    <div class="legend-item">
+      <svg width="24" height="12"><line x1="0" y1="6" x2="24" y2="6" stroke="#3B82F6" stroke-width="2"/></svg>
+      <span>Питание 5В</span>
+    </div>
+    <div class="legend-item">
+      <svg width="24" height="12"><line x1="0" y1="6" x2="24" y2="6" stroke="#F59E0B" stroke-width="2"/></svg>
+      <span>Питание 12В</span>
+    </div>
+    <div class="legend-item">
+      <svg width="24" height="12"><line x1="0" y1="6" x2="24" y2="6" stroke="#10B981" stroke-width="2"/></svg>
+      <span>Данные (I²C / 1-Wire)</span>
+    </div>
+    <div class="legend-item">
+      <svg width="24" height="12"><line x1="0" y1="6" x2="24" y2="6" stroke="#6366F1" stroke-width="2"/></svg>
+      <span>Управление (GPIO)</span>
+    </div>
+    <div class="legend-item">
+      <svg width="24" height="12"><line x1="0" y1="6" x2="24" y2="6" stroke="#EC4899" stroke-width="2"/></svg>
+      <span>SPI</span>
+    </div>
+  </div>
+
+  <!-- Version watermark -->
+  <div style="position:absolute; bottom:16px; right:24px; font-size:10px; color:#D1D5DB; z-index:10;">BuhloWar v2.0 · 2025</div>
+
+</div>
+
+</body>
+</html>
